@@ -1,0 +1,32 @@
+{
+  "name": "kasechar-gemini",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server/dev-server.mjs",
+    "dev:client": "vite",
+    "start": "node server/dev-server.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "node server/dev-server.mjs --prod",
+    "typecheck:client": "tsc --noEmit",
+    "build:server": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit && vite build",
+    "lint": "tsc --noEmit",
+    "test": "tsc src/types.ts src/lib/mrvEngine.ts --outDir .test-dist --module ESNext --target ES2020 --moduleResolution node --esModuleInterop --skipLibCheck && node --test tests/xprize-scenarios.test.mjs"
+  },
+  "dependencies": {
+    "@google/genai": "^2.13.0",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "puppeteer-core": "^25.3.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  }
+}

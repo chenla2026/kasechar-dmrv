@@ -1,0 +1,294 @@
+﻿:root {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+  color: #0f172a;
+  background: #f0f6ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(145deg, #eff6ff 0%, #f8fafc 45%, #f0fdfa 100%);
+  color: #0f172a;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 16px;
+  background: #ffffffcc;
+  backdrop-filter: blur(4px);
+}
+
+.topbar h1,
+.topbar h2 {
+  margin: 0;
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+}
+
+.status-assessable {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-not_assessable {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-needs_human_review {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-evidence_incomplete {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.status-ready_for_audit_package {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tabs button {
+  border: 1px solid #bfdbfe;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.tabs button.active {
+  background: #0f172a;
+  color: #fff;
+}
+
+.notice {
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.screen {
+  display: grid;
+  gap: 12px;
+}
+
+.screen h2 {
+  margin: 4px 0;
+}
+
+.stat-grid,
+.card-grid,
+.grid-2 {
+  display: grid;
+  gap: 12px;
+}
+
+.stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.card {
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 12px;
+  background: #ffffffcc;
+  display: grid;
+  gap: 8px;
+}
+
+.stat-grid article,
+.checklist .check-item {
+  padding: 12px;
+  background: #ffffffcc;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+}
+
+.field,
+.file-row {
+  display: grid;
+  gap: 6px;
+}
+
+.field input,
+.field textarea,
+.field select {
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 36px;
+  width: 100%;
+}
+
+.field textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+button {
+  border-radius: 10px;
+  border: 1px solid #1d4ed8;
+  background: #dbeafe;
+  color: #1e3a8a;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+button.ghost {
+  background: #fff;
+}
+
+.checklist {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.check-item.complete strong {
+  color: #166534;
+}
+
+.check-item.missing strong {
+  color: #9a3412;
+}
+
+.evidence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.evidence-list button {
+  width: 100%;
+  text-align: left;
+  background: #ffffff;
+}
+
+.evidence-list .selected {
+  background: #e0f2fe;
+}
+
+.analysis-row,
+.audits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gap-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.audit-list {
+  display: grid;
+  gap: 8px;
+}
+
+.audit-list li {
+  border: 1px solid #bfdbfe;
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 10px;
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+.summary {
+  border: 1px dashed #94a3b8;
+  padding: 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+@media (max-width: 900px) {
+  .grid-2,
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.status-geolocation_missing,
+.status-legality_evidence_missing,
+.status-deforestation_risk_review_required {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.status-eudr_evidence_ready {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-eudr_evidence_incomplete {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-row {
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
