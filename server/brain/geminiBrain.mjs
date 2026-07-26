@@ -268,71 +268,14 @@ function buildPrompt(action, payload) {
 
 async function invokeModel(prompt, modelName) {
   const activeKey = (process.env.GEMINI_API_KEY || GEMINI_API_KEY || "").trim();
-  const mode = (process.env.GEMINI_MODE || (activeKey ? "live" : "fixture")).trim().toLowerCase();
+  const mode = (process.env.GEMINI_MODE || "live").trim().toLowerCase();
 
-  if (mode === "live" && !activeKey) {
-    return { status: "blocked", error: "GEMINI_API_KEY missing while GEMINI_MODE=live. Live execution rejected." };
+  if (mode === "fixture") {
+    return { status: "blocked", error: "Fixture mode is disabled. Gemini may only interpret supplied evidence through a configured live model." };
   }
 
-  if (mode === "fixture" || !activeKey) {
-    return {
-      status: "ok",
-      upstreamStatus: null,
-      upstreamStatusText: "FIXTURE_MODE",
-      parsed: {
-        summary: "[FIXTURE MODE: Real Gemini execution unverified — GEMINI_API_KEY not set or GEMINI_MODE=fixture] Extracted dMRV parameters from evidence.",
-        confidence: 0.95,
-        riskStatus: "ASSESSABLE",
-        riskFlags: ["[FIXTURE MODE] Real Gemini execution unverified; using safe demonstration fixture."],
-        extraction: {
-          feedstockEvidence: {
-            feedstockType: "Forestry thinnings",
-            sourceLocation: "Parc Naturel Régional des Landes",
-            supplierName: "Landes Biomass Coop",
-            biomassOrigin: "Sustainably managed pine forest",
-            contaminationRisk: "Low",
-            sustainabilityConcern: "None - FSC certified",
-          },
-          productionEvidence: {
-            pyrolysisDate: "2026-06-01",
-            technologyType: "Continuous rotary kiln pyrolysis",
-            temperatureRange: "550-600 C",
-            batchQuantity: "50 metric tons",
-            energyUse: "Self-sustaining syngas loop",
-          },
-          qualityEvidence: {
-            labReportAvailable: "Yes - Report #LR-2026-99",
-            carbonContent: "84.5%",
-            moisture: "3.2%",
-            ashContent: "6.1%",
-            hcRatio: "0.28",
-            stabilityEvidence: "H:Corg < 0.4 indicates >1000 yr permanence",
-          },
-          storageEvidence: {
-            permanenceClass: "Class A (>1000 yrs)",
-            monitoringPlan: "Annual soil sampling and GPS tracking",
-            reversalRisk: "Negligible",
-            leakageRisk: "None",
-            doubleCountingRisk: "None - registered exclusively on KaseChar",
-          },
-          eudrEvidence: {
-            productionPlotGeolocation: "GPS 44.8378, -0.5792",
-            productionPeriod: "2025 Q4",
-            commodityOrBiomassSource: "Wood chips from thinning",
-            supplierFarmerProducerIdentity: "Bavaria Timber GmbH",
-            noDeforestationEvidence: "Copernicus satellite verification shows forest cover unchanged since 2018",
-            legalityEvidence: "German harvesting permit #GER-2025-8891 verified",
-            latitude: "48.1351",
-            longitude: "11.5820",
-            crs: "WGS84",
-            coordinateSource: "GPS",
-          },
-        },
-        findings: ["Extracted pyrolysis and quality parameters", "Verified H:C ratio meets permanence threshold"],
-        missingEvidence: [],
-        classifications: ["BIOCHAR_PRODUCTION", "LAB_REPORT", "EUDR_LEGALITY"],
-      },
-    };
+  if (!activeKey) {
+    return { status: "blocked", error: "GEMINI_API_KEY missing while GEMINI_MODE=live. Live execution rejected." };
   }
 
   try {

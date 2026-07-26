@@ -51,7 +51,8 @@ export type AppScreen =
   | "eudr-checklist"
   | "eudr-gaps"
   | "audit"
-  | "package";
+  | "package"
+  | "sonnenerde-demo";
 
 export interface BatchForm {
   id: string;
@@ -136,6 +137,82 @@ export interface EvidenceRecord {
   classifications: string[];
   lastGeminiResultAt?: string;
   lastGeminiSummary?: string;
+}
+
+export type EvidenceAssertionStatus = "DIRECT" | "FORECAST" | "DOCUMENTARY";
+export type EvidenceIntegrityStatus = "VERIFIED" | "DUPLICATE_IDENTICAL";
+export type DemonstrationControlledStatus = "VERIFIED" | BiocharControlledStatus;
+
+export interface EvidenceSourceReference {
+  fileName: string;
+  page: number;
+  documentDate: string;
+  documentVersion?: string;
+  sha256: string;
+  evidenceType: EvidenceAssertionStatus;
+}
+
+export interface DemonstrationDocument {
+  fileName: string;
+  localEvidencePath?: string;
+  sha256: string;
+  pageCount: number;
+  readable: boolean;
+  documentDate: string;
+  documentVersion?: string;
+  integrityStatus: EvidenceIntegrityStatus;
+  canonicalFileName?: string;
+}
+
+export interface ControlledDemonstrationAvailability {
+  projectConfigurationComplete: boolean;
+  feedstockBatchEligibility: boolean;
+  actualBatchMassBalance: boolean;
+  laboratoryQualityAndStability: boolean;
+  actualCarbonRemovalQuantity: boolean;
+  transportChainOfCustodyAndApplication: boolean;
+  permitAndLegalEvidence: boolean;
+  certificationAndRegistryEvidence: boolean;
+  dryMatterMethodAndElectricityFactorEvidence: boolean;
+}
+
+export interface ControlledDemonstrationAssessment {
+  fileIngestion: DemonstrationControlledStatus;
+  projectIdentity: DemonstrationControlledStatus;
+  projectConfiguration: BiocharControlledStatus;
+  feedstockEligibility: BiocharControlledStatus;
+  actualBatchMassBalance: BiocharControlledStatus;
+  laboratoryQualityAndStability: BiocharControlledStatus;
+  actualCarbonRemovalQuantity: BiocharControlledStatus;
+  transportChainOfCustodyAndApplication: BiocharControlledStatus;
+  permitAndLegalStatus: BiocharControlledStatus;
+  certificationAndRegistryValidity: BiocharControlledStatus;
+  dryMatterMethodAndElectricityFactor: BiocharControlledStatus;
+  documentControlConflicts: BiocharControlledStatus;
+  auditReady: false;
+}
+
+export type LocalEvidenceAvailability = "AVAILABLE" | "EVIDENCE_UNAVAILABLE";
+
+export interface SonnenerdeDemonstrationField {
+  key: string;
+  label: string;
+  value: string;
+  sources: EvidenceSourceReference[];
+}
+
+export interface SonnenerdeDemonstrationResponse {
+  availability: LocalEvidenceAvailability;
+  label: "CONTROLLED LOCAL DOCUMENT DEMONSTRATION";
+  message: string;
+  documents?: DemonstrationDocument[];
+  unavailableDocuments?: string[];
+  projectFields?: SonnenerdeDemonstrationField[];
+  forecastFields?: SonnenerdeDemonstrationField[];
+  evidenceGaps?: string[];
+  conflicts?: string[];
+  evidenceAvailability?: ControlledDemonstrationAvailability;
+  assessment?: ControlledDemonstrationAssessment;
 }
 
 export interface GeminiExtraction {

@@ -4,6 +4,7 @@ import { createReadStream } from "node:fs";
 import { createServer } from "node:http";
 import { createServer as createViteServer } from "vite";
 import { getAuditLog, runBrainAnalysis } from "./brain/geminiBrain.mjs";
+import { getSonnenerdeDemonstration } from "./controller/sonnenerdeDemo.mjs";
 
 function loadLocalEnv() {
   const candidateFiles = [
@@ -131,6 +132,11 @@ async function run() {
         modelConfigured: Boolean(process.env.GEMINI_API_KEY),
         environment: IS_PROD ? "production" : "development",
       });
+      return;
+    }
+
+    if (pathname === "/api/demonstrations/sonnenerde" && request.method === "GET") {
+      sendJson(response, 200, getSonnenerdeDemonstration());
       return;
     }
 

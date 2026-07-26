@@ -16,6 +16,7 @@ import type {
   DecisionSignals,
   GeminiExtraction,
   GeminiResult,
+  SonnenerdeDemonstrationResponse,
 } from "./types";
 import { CONTROLLED_STATUS_TEXT } from "./types";
 import {
@@ -43,6 +44,7 @@ type FieldDef = {
 
 const SCREENS: { id: AppScreen; label: string; secondary?: boolean }[] = [
   { id: "dashboard", label: "Dashboard" },
+  { id: "sonnenerde-demo", label: "Sonnenerde demo" },
   { id: "batch", label: "Biochar record" },
   { id: "evidence", label: "Evidence intake" },
   { id: "analysis", label: "Gemini panel" },
@@ -334,6 +336,9 @@ export default function App() {
   const [eudrPackage, setEudrPackage] = useState<EudrAuditPackage | null>(null);
   const [biocharSummary, setBiocharSummary] = useState("");
   const [eudrSummary, setEudrSummary] = useState("");
+  const [sonnenerdeDemo, setSonnenerdeDemo] = useState<SonnenerdeDemonstrationResponse | null>(null);
+  const [sonnenerdeLoading, setSonnenerdeLoading] = useState(false);
+  const [sonnenerdeError, setSonnenerdeError] = useState("");
 
   const biocharChecklist = useMemo(() => buildBiocharChecklist(batch), [batch]);
   const eudrChecklist = useMemo(() => buildEudrChecklist(batch), [batch]);
@@ -348,6 +353,8 @@ export default function App() {
     [batch, eudrSignals, eudrPackageReady],
   );
 
+  const sonnenerdeAssessment = sonnenerdeDemo?.assessment ?? null;
+
   const selectedEvidence = evidence.find((item) => item.id === selectedEvidenceId) ?? null;
   const biocharBySection = useMemo(() => groupBySection(BIOCHAR_FIELDS), []);
   const eudrBySection = useMemo(() => groupBySection(EUDR_FIELDS), []);
@@ -355,6 +362,12 @@ export default function App() {
   useEffect(() => {
     void refreshAuditLog();
   }, []);
+
+  useEffect(() => {
+    if (screen === "sonnenerde-demo" && !sonnenerdeDemo && !sonnenerdeLoading) {
+      void loadSonnenerdeDemonstration();
+    }
+  }, [screen, sonnenerdeDemo, sonnenerdeLoading]);
 
   const updateField = <K extends keyof BatchForm>(field: K, value: BatchForm[K]) => {
     setBatch((current) => ({ ...current, [field]: value }));
@@ -367,6 +380,22 @@ export default function App() {
   async function refreshAuditLog() {
     const next = await getAuditLog();
     setAuditLog(next);
+  }
+
+  async function loadSonnenerdeDemonstration() {
+    setSonnenerdeLoading(true);
+    setSonnenerdeError("");
+    try {
+      const response = await fetch("/api/demonstrations/sonnenerde");
+      if (!response.ok) throw new Error("The controlled local evidence endpoint did not return a successful response.");
+      const payload = await response.json() as SonnenerdeDemonstrationResponse;
+      setSonnenerdeDemo(payload);
+    } catch (error) {
+      setSonnenerdeDemo(null);
+      setSonnenerdeError("Sonnenerde evidence is unavailable: " + String(error));
+    } finally {
+      setSonnenerdeLoading(false);
+    }
   }
 
   function addEvidence() {
@@ -661,6 +690,85 @@ export default function App() {
             </article>
           </div>
           {renderReviewerRecommendationsBlock()}
+        </section>
+      )}
+
+      {screen === "sonnenerde-demo" && (
+        <section className="screen" data-testid="sonnenerde-demonstration">
+          <h2>CONTROLLED LOCAL DOCUMENT DEMONSTRATION</h2>
+          <p className="notice">
+            Read-only, source-grounded demonstration. It does not represent actual production, carbon removal, certification, legal compliance, credit issuance, approval, or verified removals.
+          </p>
+          <button type="button" className="ghost" onClick={() => void loadSonnenerdeDemonstration()} disabled={sonnenerdeLoading}>
+            <RefreshCw size={14} /> {sonnenerdeLoading ? "Checking external evidence..." : "Recheck local evidence"}
+          </button>
+          {sonnenerdeError && <p className="notice">{sonnenerdeError}</p>}
+          {sonnenerdeDemo?.availability === "EVIDENCE_UNAVAILABLE" && (
+            <article className="card" data-testid="sonnenerde-evidence-unavailable">
+              <h3>EVIDENCE_UNAVAILABLE</h3>
+              <p>{sonnenerdeDemo.message}</p>
+              <p>Unavailable or failed-integrity files: {sonnenerdeDemo.unavailableDocuments?.join(", ") || "not specified"}</p>
+            </article>
+          )}
+          {sonnenerdeDemo?.availability === "AVAILABLE" && (
+            <>
+              <p className="notice">{sonnenerdeDemo.message}</p>
+              <div className="card-grid">
+                <article className="card">
+                  <h3>Project identity and extracted fields</h3>
+                  {sonnenerdeDemo.projectFields?.map((field) => (
+                    <div key={field.key}>
+                      <strong>{field.label}:</strong> {field.value}
+                      <p><small>{field.sources.map((reference) => reference.fileName + " p. " + reference.page + " [" + reference.evidenceType + "]").join("; ")}</small></p>
+                    </div>
+                  ))}
+                </article>
+                <article className="card">
+                  <h3>Forecast-only values</h3>
+                  <p><strong>FORECAST ONLY - not actual production or carbon removal.</strong></p>
+                  {sonnenerdeDemo.forecastFields?.map((field) => (
+                    <div key={field.key}>
+                      <strong>{field.label}:</strong> {field.value}
+                      <p><small>{field.sources.map((reference) => reference.fileName + " p. " + reference.page + " [FORECAST]").join("; ")}</small></p>
+                    </div>
+                  ))}
+                </article>
+              </div>
+              <article className="card">
+                <h3>Document control and source provenance</h3>
+                <p><strong>Canonical PDD:</strong> 1_Project_Design_Document_GCSP1134.pdf (37 pages; version 3.0; issued 2025-07-07)</p>
+                <ul className="gap-list">
+                  {sonnenerdeDemo.documents?.map((document) => (
+                    <li key={document.fileName}>
+                      <strong>{document.fileName}</strong> - {document.pageCount} pages; date {document.documentDate}; SHA-256 {document.sha256}; {document.integrityStatus}
+                      {document.documentVersion ? "; version " + document.documentVersion : ""}
+                      {document.canonicalFileName ? "; canonical PDD: " + document.canonicalFileName : ""}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+              <div className="card-grid">
+                <article className="card">
+                  <h3>Evidence gaps</h3>
+                  <ul className="gap-list">{sonnenerdeDemo.evidenceGaps?.map((gap) => <li key={gap}>{gap}</li>)}</ul>
+                </article>
+                <article className="card">
+                  <h3>Conflicts requiring review</h3>
+                  <ul className="gap-list">{sonnenerdeDemo.conflicts?.map((conflict) => <li key={conflict}>{conflict}</li>)}</ul>
+                </article>
+              </div>
+              <article className="card">
+                <h3>Deterministic assessment statuses</h3>
+                {sonnenerdeAssessment && (
+                  <ul className="gap-list">
+                    {Object.entries(sonnenerdeAssessment).map(([field, status]) => (
+                      <li key={field}><strong>{field}:</strong> {String(status)}</li>
+                    ))}
+                  </ul>
+                )}
+              </article>
+            </>
+          )}
         </section>
       )}
 

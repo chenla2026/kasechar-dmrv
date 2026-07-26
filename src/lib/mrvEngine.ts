@@ -3,7 +3,10 @@ import type {
   BiocharControlledStatus,
   BatchForm,
   ChecklistItem,
+  ControlledDemonstrationAssessment,
+  ControlledDemonstrationAvailability,
   ControlledStatus,
+  DemonstrationDocument,
   DecisionSignals,
   EudrAuditPackage,
   EudrDecisionSignals,
@@ -445,6 +448,43 @@ export function inferBiocharControlledStatus(
   }
 
   return "ASSESSABLE";
+}
+
+export function assessControlledDemonstration(
+  documents: DemonstrationDocument[],
+  availability: ControlledDemonstrationAvailability,
+  identityFieldReferences: string[],
+  conflicts: string[],
+): ControlledDemonstrationAssessment {
+  const canonicalDocuments = documents.filter((document) => document.integrityStatus === "VERIFIED");
+  const duplicateDocuments = documents.filter((document) => document.integrityStatus === "DUPLICATE_IDENTICAL");
+  const duplicateIsExact = duplicateDocuments.every((duplicate) =>
+    canonicalDocuments.some(
+      (canonical) => canonical.fileName === duplicate.canonicalFileName && canonical.sha256 === duplicate.sha256,
+    ),
+  );
+  const filesVerified = documents.length > 0 &&
+    documents.every((document) => document.readable && document.sha256.length === 64 && document.pageCount > 0) &&
+    duplicateIsExact;
+  const identityVerified = ["projectId", "projectName", "operator", "facilityCoordinates"].every((field) =>
+    identityFieldReferences.includes(field),
+  );
+
+  return {
+    fileIngestion: filesVerified ? "VERIFIED" : "EVIDENCE_INCOMPLETE",
+    projectIdentity: identityVerified ? "VERIFIED" : "EVIDENCE_INCOMPLETE",
+    projectConfiguration: availability.projectConfigurationComplete ? "ASSESSABLE" : "EVIDENCE_INCOMPLETE",
+    feedstockEligibility: availability.feedstockBatchEligibility ? "ASSESSABLE" : "EVIDENCE_INCOMPLETE",
+    actualBatchMassBalance: availability.actualBatchMassBalance ? "ASSESSABLE" : "NOT_ASSESSABLE",
+    laboratoryQualityAndStability: availability.laboratoryQualityAndStability ? "ASSESSABLE" : "NOT_ASSESSABLE",
+    actualCarbonRemovalQuantity: availability.actualCarbonRemovalQuantity ? "ASSESSABLE" : "NOT_ASSESSABLE",
+    transportChainOfCustodyAndApplication: availability.transportChainOfCustodyAndApplication ? "ASSESSABLE" : "NOT_ASSESSABLE",
+    permitAndLegalStatus: availability.permitAndLegalEvidence ? "ASSESSABLE" : "NEEDS_HUMAN_REVIEW",
+    certificationAndRegistryValidity: availability.certificationAndRegistryEvidence ? "ASSESSABLE" : "NEEDS_HUMAN_REVIEW",
+    dryMatterMethodAndElectricityFactor: availability.dryMatterMethodAndElectricityFactorEvidence ? "ASSESSABLE" : "NEEDS_HUMAN_REVIEW",
+    documentControlConflicts: conflicts.length === 0 ? "ASSESSABLE" : "NEEDS_HUMAN_REVIEW",
+    auditReady: false,
+  };
 }
 
 export function inferEudrControlledStatus(

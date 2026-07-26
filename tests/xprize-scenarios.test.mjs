@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 
@@ -21,7 +22,17 @@ import {
   hasMeaningfulText,
 } from "../.test-dist/lib/mrvEngine.js";
 
+import {
+  SONNENERDE_PYRODRY_ASSESSMENT,
+  SONNENERDE_PYRODRY_BATCH,
+  SONNENERDE_PYRODRY_CONFLICTS,
+  SONNENERDE_PYRODRY_DOCUMENTS,
+  SONNENERDE_PYRODRY_FIELD_EVIDENCE,
+  SONNENERDE_PYRODRY_FORECASTS,
+} from "../.test-dist/fixtures/sonnenerdePyroDry.js";
+
 import { runBrainAnalysis, recordAudit, getAuditLog } from "../server/brain/geminiBrain.mjs";
+import { getSonnenerdeDemonstration } from "../server/controller/sonnenerdeDemo.mjs";
 
 test("Scenario 1: Server startup & /api/health smoke test", async () => {
   // Start dev server on a dynamic port for smoke test
@@ -49,7 +60,7 @@ test("Scenario 1: Server startup & /api/health smoke test", async () => {
   }
 });
 
-test("Scenario 2: Gemini analysis test using safe fixture & contract verification", async () => {
+test("Scenario 2: Gemini controller rejects missing live-model configuration without fabricated evidence", async () => {
   const payload = {
     action: "extract-evidence",
     evidenceId: "ev-test-123",
@@ -66,7 +77,15 @@ test("Scenario 2: Gemini analysis test using safe fixture & contract verificatio
     context: { batchContext: {} },
   };
 
-  const res = await runBrainAnalysis(payload);
+  const priorMode = process.env.GEMINI_MODE;
+  process.env.GEMINI_MODE = "fixture";
+  let res;
+  try {
+    res = await runBrainAnalysis(payload);
+  } finally {
+    if (priorMode === undefined) delete process.env.GEMINI_MODE;
+    else process.env.GEMINI_MODE = priorMode;
+  }
   
   // Verify upgraded contract requirements
   assert.ok(res.requestId, "Must contain requestId");
@@ -81,6 +100,83 @@ test("Scenario 2: Gemini analysis test using safe fixture & contract verificatio
   assert.ok(res.validationResult, "Must return validationResult object");
   assert.equal(typeof res.confidence, "number", "Confidence must be numeric");
   assert.ok(res.outputHash, "Must return deterministic outputHash");
+  assert.equal(res.status, "error", "Missing live configuration must block analysis rather than fabricate evidence");
+  assert.equal(res.outputStatus, "blocked", "Missing live configuration must produce a blocked output");
+});
+
+test("Scenario 2b: Sonnenerde controlled document demonstration preserves provenance and deterministic gates", () => {
+  assert.equal(SONNENERDE_PYRODRY_DOCUMENTS.length, 7, "All supplied PDFs must be represented by the local manifest");
+  for (const document of SONNENERDE_PYRODRY_DOCUMENTS) {
+    assert.equal(fs.existsSync(document.localEvidencePath), true, `External evidence file must exist: ${document.fileName}`);
+    const actualHash = createHash("sha256").update(fs.readFileSync(document.localEvidencePath)).digest("hex");
+    assert.equal(actualHash, document.sha256, `Manifest SHA-256 must match: ${document.fileName}`);
+    assert.ok(document.pageCount > 0, `Manifest page count must be positive: ${document.fileName}`);
+  }
+  const canonical = SONNENERDE_PYRODRY_DOCUMENTS.find((document) => document.fileName === "1_Project_Design_Document_GCSP1134.pdf");
+  const duplicate = SONNENERDE_PYRODRY_DOCUMENTS.find((document) => document.fileName === "1_PDD.pdf");
+  assert.ok(canonical && duplicate, "Both PDD filenames must be represented");
+  assert.equal(duplicate.integrityStatus, "DUPLICATE_IDENTICAL");
+  assert.equal(duplicate.canonicalFileName, canonical.fileName);
+  assert.equal(duplicate.sha256, canonical.sha256, "Duplicate PDD hash must match canonical PDD hash");
+  assert.equal(SONNENERDE_PYRODRY_FIELD_EVIDENCE.projectId[0].fileName, "1_Project_Design_Document_GCSP1134.pdf");
+  assert.equal(SONNENERDE_PYRODRY_FIELD_EVIDENCE.projectId[0].page, 1);
+  assert.equal(SONNENERDE_PYRODRY_FIELD_EVIDENCE.forecastYield[0].evidenceType, "FORECAST");
+  for (const references of Object.values(SONNENERDE_PYRODRY_FIELD_EVIDENCE)) {
+    for (const reference of references) {
+      const document = SONNENERDE_PYRODRY_DOCUMENTS.find((entry) => entry.fileName === reference.fileName);
+      assert.ok(document, `Every extracted field must reference a manifest document: ${reference.fileName}`);
+      assert.equal(reference.sha256, document.sha256, `Field source hash must match manifest: ${reference.fileName}`);
+      assert.ok(reference.page > 0, `Field source page must be explicit: ${reference.fileName}`);
+    }
+  }
+  assert.equal(SONNENERDE_PYRODRY_FORECASTS.feedstockToBiocharYield, "0.4 t biochar (DM) / t feedstock (DM)");
+  assert.equal(SONNENERDE_PYRODRY_BATCH.batchQuantity, "", "Forecast output must not populate an actual batch measurement");
+  assert.equal(SONNENERDE_PYRODRY_BATCH.carbonContent, "", "A PDD reference to prior analysis must not become a laboratory result");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.fileIngestion, "VERIFIED");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.projectIdentity, "VERIFIED");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.projectConfiguration, "EVIDENCE_INCOMPLETE");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.actualBatchMassBalance, "NOT_ASSESSABLE");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.laboratoryQualityAndStability, "NOT_ASSESSABLE");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.actualCarbonRemovalQuantity, "NOT_ASSESSABLE");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.transportChainOfCustodyAndApplication, "NOT_ASSESSABLE");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.permitAndLegalStatus, "NEEDS_HUMAN_REVIEW");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.certificationAndRegistryValidity, "NEEDS_HUMAN_REVIEW");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.dryMatterMethodAndElectricityFactor, "NEEDS_HUMAN_REVIEW");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.documentControlConflicts, "NEEDS_HUMAN_REVIEW");
+  assert.equal(SONNENERDE_PYRODRY_ASSESSMENT.auditReady, false, "Incomplete evidence must never reach audit readiness");
+  assert.ok(SONNENERDE_PYRODRY_CONFLICTS.includes("CH4_DOCUMENTATION_GAP"));
+  assert.ok(SONNENERDE_PYRODRY_CONFLICTS.includes("ACTUAL_OPERATIONAL_AND_LABORATORY_RECORDS_MISSING"));
+});
+
+
+test("Scenario 2c: Sonnenerde UI contract exposes only verified local evidence and preserves unavailable state", () => {
+  const demo = getSonnenerdeDemonstration();
+  assert.equal(demo.availability, "AVAILABLE", "Available external evidence must load through the controller");
+  assert.equal(demo.label, "CONTROLLED LOCAL DOCUMENT DEMONSTRATION");
+  assert.equal(demo.documents?.length, 7);
+  assert.ok(demo.documents?.every((document) => !("localEvidencePath" in document)), "The controller must not disclose filesystem paths");
+  const duplicate = demo.documents?.find((document) => document.fileName === "1_PDD.pdf");
+  assert.equal(duplicate?.integrityStatus, "DUPLICATE_IDENTICAL");
+  assert.equal(duplicate?.canonicalFileName, "1_Project_Design_Document_GCSP1134.pdf");
+  const projectId = demo.projectFields?.find((field) => field.key === "projectId");
+  assert.equal(projectId?.sources[0].fileName, "1_Project_Design_Document_GCSP1134.pdf");
+  assert.equal(projectId?.sources[0].page, 1);
+  assert.ok(demo.forecastFields?.every((field) => field.sources.every((source) => source.evidenceType === "FORECAST")), "Forecast values must remain forecast-only");
+  assert.ok(demo.evidenceGaps?.length, "Missing evidence must be explicit");
+  assert.ok(demo.conflicts?.includes("CH4_DOCUMENTATION_GAP"), "Conflicts must remain explicit");
+  assert.equal(demo.assessment?.actualBatchMassBalance, "NOT_ASSESSABLE");
+  assert.equal(demo.assessment?.documentControlConflicts, "NEEDS_HUMAN_REVIEW");
+  assert.equal(demo.assessment?.auditReady, false, "Controller assessment must never mark this evidence incomplete case audit-ready");
+  const unavailable = getSonnenerdeDemonstration({ evidenceRoot: path.join(__dirname, "no-such-sonnenerde-evidence") });
+  assert.equal(unavailable.availability, "EVIDENCE_UNAVAILABLE");
+  assert.equal("projectFields" in unavailable, false, "Unavailable evidence must not fall back to project fields");
+  assert.equal("forecastFields" in unavailable, false, "Unavailable evidence must not fall back to forecasts");
+  const appSource = fs.readFileSync(path.resolve(__dirname, "../src/App.tsx"), "utf8");
+  assert.match(appSource, /CONTROLLED LOCAL DOCUMENT DEMONSTRATION/);
+  assert.match(appSource, /api\/demonstrations\/sonnenerde/);
+  assert.match(appSource, /FORECAST ONLY/);
+  assert.match(appSource, /EVIDENCE_UNAVAILABLE/);
+  assert.equal(appSource.includes("assessControlledDemonstration"), false, "The UI must render controller-provided assessment, not calculate it locally");
 });
 
 test("Scenario 3: Biochar complete-evidence scenario (Deterministic Gate: READY_FOR_AUDIT_PACKAGE)", () => {

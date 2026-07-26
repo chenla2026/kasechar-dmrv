@@ -15,7 +15,9 @@ body {
 }
 
 .app {
+  width: 100%;
   max-width: 1200px;
+  min-width: 0;
   margin: 0 auto;
   padding: 16px;
   display: grid;
@@ -27,6 +29,8 @@ body {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+  flex-wrap: wrap;
+  min-width: 0;
   padding: 14px 16px;
   border: 1px solid #dbeafe;
   border-radius: 16px;
@@ -34,12 +38,18 @@ body {
   backdrop-filter: blur(4px);
 }
 
+.topbar > * {
+  min-width: 0;
+}
+
 .topbar h1,
 .topbar h2 {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .status {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -55,6 +65,10 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   font-size: 0.78rem;
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .status-assessable {
@@ -83,6 +97,7 @@ body {
 }
 
 .tabs {
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -94,6 +109,9 @@ body {
   color: #0f172a;
   border-radius: 10px;
   padding: 8px 12px;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
 }
 
@@ -103,6 +121,9 @@ body {
 }
 
 .notice {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   border: 1px solid #93c5fd;
   background: #eff6ff;
   padding: 10px;
@@ -110,6 +131,7 @@ body {
 }
 
 .screen {
+  min-width: 0;
   display: grid;
   gap: 12px;
 }
@@ -121,16 +143,17 @@ body {
 .stat-grid,
 .card-grid,
 .grid-2 {
+  min-width: 0;
   display: grid;
   gap: 12px;
 }
 
 .stat-grid {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
 }
 
 .card-grid {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
 }
 
 .grid-2 {
@@ -138,6 +161,9 @@ body {
 }
 
 .card {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   border: 1px solid #bfdbfe;
   border-radius: 14px;
   padding: 12px;
@@ -228,8 +254,17 @@ button.ghost {
 }
 
 .gap-list {
+  min-width: 0;
   margin: 0;
   padding-left: 18px;
+}
+
+.gap-list li,
+.card p,
+.card small,
+.card strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .audit-list {
@@ -291,4 +326,19 @@ pre {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .app {
+    padding: 12px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .status {
+    width: 100%;
+  }
 }
