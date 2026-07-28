@@ -13,7 +13,7 @@
     "typecheck:client": "tsc --noEmit",
     "build:server": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc --noEmit && vite build",
     "lint": "tsc --noEmit",
-    "test": "tsc src/types.ts src/lib/mrvEngine.ts src/fixtures/sonnenerdePyroDry.ts --outDir .test-dist --module ESNext --target ES2020 --moduleResolution node --esModuleInterop --skipLibCheck && node --test tests/xprize-scenarios.test.mjs"
+    "test": "npm run build && tsc src/types.ts src/lib/mrvEngine.ts src/fixtures/sonnenerdePyroDry.ts --outDir .test-dist --module ESNext --target ES2020 --moduleResolution node --esModuleInterop --skipLibCheck && node --test tests/xprize-scenarios.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.13.0",

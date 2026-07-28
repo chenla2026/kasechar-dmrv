@@ -1,14 +1,27 @@
 # KaseChar Product Evidence
 
-This folder contains evidence that KaseChar is a working AI-powered digital Monitoring, Reporting, and Verification (dMRV) platform.
+KaseChar is an evidence-controlled biochar dMRV workspace. It supports source-grounded project review, server-owned monitoring evidence, deterministic gap reporting, and advisory AI-assisted extraction without representing certification, credit issuance, or verified removals.
 
-It will include:
+## Product media
 
-- Product screenshots
-- Browser validation
-- API health response
-- Build verification
-- Automated test summaries
-- Demo workflow evidence
+Existing repository-tracked submission media:
 
-These materials support the hackathon submission and demonstrate the platform's operational capabilities.
+![Biochar dMRV dashboard](../submission-media/01-kasechar-biochar-dashboard.png)
+
+![Gemini evidence extraction](../submission-media/02-kasechar-gemini-evidence-extraction.png)
+
+![Server-controlled audit package workflow](../submission-media/03-kasechar-audit-package.png)
+
+## Demonstrated workflow
+
+1. Open the source-grounded Sonnenerde PyroDry monitoring workspace.
+2. Inspect plan requirements, evidence gaps, provenance, and package-gating reasons.
+3. Submit a USER_ASSERTION; it remains advisory and cannot satisfy material evidence coverage.
+4. Admit the explicitly labelled controlled demo laboratory record; coverage changes only for that item and the package remains blocked.
+5. Inspect the server-generated timeline and reset the controlled demo state.
+
+## Verification record
+
+See [VALIDATION.md](VALIDATION.md) for command, server, desktop-browser, Gemini, security-boundary, and production-demo-gate results.
+
+See [MOBILE_QA_STATUS.md](MOBILE_QA_STATUS.md) for the explicit mobile-QA limitation. It is not represented as a completed browser verification.

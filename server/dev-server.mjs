@@ -5,6 +5,9 @@ import { createServer } from "node:http";
 import { createServer as createViteServer } from "vite";
 import { getAuditLog, runBrainAnalysis } from "./brain/geminiBrain.mjs";
 import { getSonnenerdeDemonstration } from "./controller/sonnenerdeDemo.mjs";
+import { captureMethodologyDocument, getMethodologyVerificationPackage, registerMethodologyUserAssertion, runMethodologyPreflight } from "./controller/methodologyPreflight.mjs";
+import { admitControlledDemoEvidence, checkControlledDocumentIntelligence, getMonitoringPackage, getMonitoringReport, getMonitoringWorkspace, resetControlledDemo, submitMonitoringEvent } from "./controller/monitoringWorkspace.mjs";
+const IS_PRODUCTION = process.env.NODE_ENV === "production" || process.argv.includes("--prod");
 
 function loadLocalEnv() {
   const candidateFiles = [
@@ -36,7 +39,7 @@ function loadLocalEnv() {
     }
   }
 }
-loadLocalEnv();
+if (process.env.KASECHAR_SKIP_LOCAL_ENV !== "1") loadLocalEnv();
 
 const PORT = Number(process.env.PORT || 5173);
 const DIST_DIR = path.resolve(process.cwd(), "dist");
@@ -77,10 +80,18 @@ function sendText(response, status, body, contentType = "text/plain; charset=utf
   response.end(body);
 }
 
+const MAX_JSON_REQUEST_BYTES = 7 * 1024 * 1024;
+
 async function collectJson(request) {
   const chunks = [];
+  let totalBytes = 0;
   for await (const chunk of request) {
-    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+    const buffer = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+    totalBytes += buffer.length;
+    if (totalBytes > MAX_JSON_REQUEST_BYTES) {
+      throw new Error("JSON request exceeds the server size limit.");
+    }
+    chunks.push(buffer);
   }
 
   const raw = Buffer.concat(chunks).toString("utf8").trim();
@@ -140,6 +151,76 @@ async function run() {
       return;
     }
 
+    if (pathname === "/api/methodology/documents" && request.method === "POST") {
+      try {
+        const document = captureMethodologyDocument(await collectJson(request));
+        sendJson(response, 201, document);
+      } catch (error) {
+        sendJson(response, 400, { error: "Methodology document capture was rejected.", details: String(error) });
+      }
+      return;
+    }
+
+    if (pathname === "/api/methodology/user-assertions" && request.method === "POST") {
+      try {
+        const assertion = registerMethodologyUserAssertion(await collectJson(request));
+        sendJson(response, 201, assertion);
+      } catch (error) {
+        sendJson(response, 400, { error: "Methodology user assertion was rejected.", details: String(error) });
+      }
+      return;
+    }
+
+    if (pathname === "/api/methodology/preflight" && request.method === "POST") {
+      try {
+        const body = await collectJson(request);
+        const result = runMethodologyPreflight(body);
+        sendJson(response, 200, result);
+      } catch (error) {
+        sendJson(response, 400, { error: "Methodology pre-flight was rejected.", details: String(error) });
+      }
+      return;
+    }
+
+    if (pathname === "/api/methodology/packages" && request.method === "POST") {
+      try {
+        sendJson(response, 200, getMethodologyVerificationPackage(await collectJson(request)));
+      } catch (error) {
+        sendJson(response, 400, { error: "Methodology package export was rejected.", details: String(error) });
+      }
+      return;
+    }
+
+    if (pathname === "/api/monitoring/workspace" && request.method === "GET") {
+      try { sendJson(response, 200, getMonitoringWorkspace(parsedUrl.searchParams.get("projectId") || "GCSP1134")); } catch { sendJson(response, 400, { error: "Monitoring workspace unavailable." }); }
+      return;
+    }
+    if (pathname === "/api/monitoring/events" && request.method === "POST") {
+      try { sendJson(response, 201, submitMonitoringEvent(await collectJson(request))); } catch (error) { sendJson(response, 400, { error: error instanceof Error ? error.message : "Monitoring event rejected." }); }
+      return;
+    }
+    if (pathname === "/api/monitoring/demo-evidence" && request.method === "POST") {
+      if (IS_PRODUCTION) { sendJson(response, 404, { error: "Controlled demo endpoint is unavailable." }); return; }
+      try { sendJson(response, 201, admitControlledDemoEvidence(await collectJson(request))); } catch (error) { sendJson(response, 400, { error: error instanceof Error ? error.message : "Controlled demo evidence was rejected." }); }
+      return;
+    }
+    if (pathname === "/api/monitoring/demo-reset" && request.method === "POST") {
+      if (IS_PRODUCTION) { sendJson(response, 404, { error: "Controlled demo endpoint is unavailable." }); return; }
+      try { sendJson(response, 200, resetControlledDemo(await collectJson(request))); } catch (error) { sendJson(response, 400, { error: error instanceof Error ? error.message : "Demo reset was rejected." }); }
+      return;
+    }
+    if (pathname === "/api/monitoring/report" && request.method === "POST") {
+      try { const body = await collectJson(request); sendJson(response, 200, getMonitoringReport(body.projectId || "GCSP1134")); } catch { sendJson(response, 400, { error: "Monitoring report unavailable." }); }
+      return;
+    }
+    if (pathname === "/api/monitoring/packages" && request.method === "POST") {
+      try { const pkg = getMonitoringPackage(await collectJson(request)); response.writeHead(200, { "content-type": "application/json", "content-disposition": `attachment; filename="${pkg.filename}"`, "cache-control": "no-store" }); response.end(pkg.body); } catch { sendJson(response, 400, { error: "Monitoring report is not ready for package export." }); }
+      return;
+    }
+    if (pathname === "/api/monitoring/gemini-check" && request.method === "POST") {
+      try { sendJson(response, 200, await checkControlledDocumentIntelligence()); } catch { sendJson(response, 200, { availability: "UNAVAILABLE", message: "Document intelligence is temporarily unavailable. Existing source-grounded monitoring records remain accessible.", sourceFileName: "1_Project_Design_Document_GCSP1134.pdf", sourcePageOrLocation: "p. 9", validationIssues: ["Live analysis was unavailable; deterministic monitoring records were not changed."] }); }
+      return;
+    }
     if (pathname === "/api/audit-log" && request.method === "GET") {
       sendJson(response, 200, getAuditLog());
       return;

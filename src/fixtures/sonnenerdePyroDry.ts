@@ -1,10 +1,10 @@
 import type {
   BatchForm,
   ControlledDemonstrationAvailability,
+  ControlledDemonstrationAssessment,
   DemonstrationDocument,
   EvidenceSourceReference,
 } from "../types";
-import { assessControlledDemonstration } from "../lib/mrvEngine.js";
 
 const EVIDENCE_ROOT = "../projects/biochar/Sonnenerde_PyroDry";
 const PDD_HASH = "b3118be7fa8be647ee4c148eb14ea074fdf7710c499e75749c353acaa23a093d";
@@ -76,4 +76,5 @@ export const SONNENERDE_PYRODRY_CONFLICTS = [
   "DUPLICATE_PDD_FILES", "LOCATION_SPELLING_INCONSISTENCY", "PDD_ISSUE_DATE_FOOTER_METADATA_INCONSISTENCY", "CH4_DOCUMENTATION_GAP", "FORECAST_POTENTIAL_VERSUS_PERMANENT_FORECAST_WORDING", "PUBLIC_CONSULTATION_INFORMATION_MISSING", "CORRECTIVE_ACTION_EVIDENCE_MISSING", "ACTUAL_OPERATIONAL_AND_LABORATORY_RECORDS_MISSING",
 ] as const;
 
-export const SONNENERDE_PYRODRY_ASSESSMENT = assessControlledDemonstration(SONNENERDE_PYRODRY_DOCUMENTS, SONNENERDE_PYRODRY_AVAILABILITY, ["projectId", "projectName", "operator", "facilityCoordinates"], [...SONNENERDE_PYRODRY_CONFLICTS]);
+/** Test-only static expectation. Runtime Sonnenerde assessment is server-owned in server/controller/sonnenerdeDemo.mjs. */
+export const SONNENERDE_PYRODRY_ASSESSMENT: ControlledDemonstrationAssessment = { fileIngestion: "VERIFIED", projectIdentity: "VERIFIED", projectConfiguration: "EVIDENCE_INCOMPLETE", feedstockEligibility: "EVIDENCE_INCOMPLETE", actualBatchMassBalance: "NOT_ASSESSABLE", laboratoryQualityAndStability: "NOT_ASSESSABLE", actualCarbonRemovalQuantity: "NOT_ASSESSABLE", transportChainOfCustodyAndApplication: "NOT_ASSESSABLE", permitAndLegalStatus: "NEEDS_HUMAN_REVIEW", certificationAndRegistryValidity: "NEEDS_HUMAN_REVIEW", dryMatterMethodAndElectricityFactor: "NEEDS_HUMAN_REVIEW", documentControlConflicts: "NEEDS_HUMAN_REVIEW", auditReady: false };

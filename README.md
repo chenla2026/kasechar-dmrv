@@ -1,56 +1,47 @@
-﻿# KaseChar Gemini (dMRV MVP)
+# KaseChar dMRV MVP
 
-This is a dedicated implementation target for a Gemini-enabled KaseChar MVP focused on Biochar evidence workflows.
+KaseChar is an evidence-controlled biochar dMRV workspace for source-grounded monitoring, gap identification, and independent-review preparation. It does not certify projects, determine legal compliance, issue credits, submit registries, or represent verified removals.
 
-## What is implemented
+## Architecture
 
-- **Body**: React screens for dashboard, biochar batch, evidence upload, extraction/control actions, checklist, gap report, audit log, and package export.
-- **Controller**: API request route `/api/gemini/analyze` and `/api/audit-log` handled by a server controller.
-- **Brain (protected)**: Server-side Gemini prompt engine in `server/brain/geminiBrain.mjs`.
-- Structured controlled statuses:
-  - `ASSESSABLE`
-  - `NOT_ASSESSABLE`
-  - `NEEDS_HUMAN_REVIEW`
-  - `EVIDENCE_INCOMPLETE`
-  - `READY_FOR_AUDIT_PACKAGE`
-- Audit trail captures model name, prompt version, action, input type, and output status.
-- No final credit/legal decision is made by the system; all outputs are advisory.
+- **Body**: React workspace and thin API adapters.
+- **Controller**: server-owned evidence admission, deterministic assessment, package gating, and audit records.
+- **Brain**: protected server-side Gemini assistance for advisory extraction and classification.
 
-## Repository layout
+The browser submits inputs and renders server responses. It does not create evidence IDs, hashes, admissions, controlled readiness, or review packages.
 
-- `src/`: React body and UI logic.
-- `server/`: Local app server and protected Brain.
-- `server/dev-server.mjs`: Serves the app and API endpoints.
-- `server/brain/geminiBrain.mjs`: Controlled Gemini wrapper and model guardrails.
-- `src/lib/mrvEngine.ts`: Checklist, status inference, and extraction merge helpers.
+## Included workflow
 
-## Run locally (non-admin Windows)
+- Source-grounded Sonnenerde PyroDry controlled document demonstration.
+- PDD monitoring workspace with plan provenance, evidence coverage, review gaps, and timeline.
+- Server-generated evidence IDs and SHA-256 integrity metadata.
+- USER_ASSERTION treatment as advisory-only.
+- Explicit controlled demo evidence, labelled `DEMO_RECORD_NOT_REAL_PROJECT_EVIDENCE`.
+- Server-gated monitoring support package export.
+- Gold Standard PARC permanently blocked as a draft, non-crediting pathway.
 
-1. Open a terminal in `kasechar-gemini`.
-2. Install dependencies:
-   ```powershell
-   npm install
-   ```
-3. Copy `.env.example` to `.env` and set your `GEMINI_API_KEY`.
-4. Start dev server (client + API):
-   ```powershell
-   npm run dev
-   ```
-5. Open `http://127.0.0.1:5173`.
+## Run locally
 
-Production-like local run:
+```powershell
+npm run dev
+```
+
+Production-like local check:
+
 ```powershell
 npm run build
 npm run preview
 ```
 
-## Endpoints
+## Validation
 
-- `GET /api/health`
-- `POST /api/gemini/analyze`
-- `GET /api/audit-log`
+Run:
 
-## Notes
+```powershell
+npm run typecheck
+npm run lint
+npm run build
+npm test
+```
 
-- This MVP remains a support system for evidence preparation and transparency.
-- Human review and legal/compliance decisions are intentionally outside AI finalization.
+Public product media and validation records are in [product-evidence](product-evidence/README.md).

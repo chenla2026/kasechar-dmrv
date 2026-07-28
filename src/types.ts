@@ -3,8 +3,7 @@ export const BIOCHAR_CONTROLLED_STATUSES = [
   "NOT_ASSESSABLE",
   "NEEDS_HUMAN_REVIEW",
   "EVIDENCE_INCOMPLETE",
-  "READY_FOR_AUDIT_PACKAGE",
-] as const;
+  ] as const;
 
 export const EUDR_CONTROLLED_STATUSES = [
   "EUDR_EVIDENCE_READY",
@@ -29,7 +28,6 @@ export const CONTROLLED_STATUS_TEXT: Record<ControlledStatus, string> = {
   ASSESSABLE: "Ready for internal review",
   NEEDS_HUMAN_REVIEW: "Needs reviewer decision",
   EVIDENCE_INCOMPLETE: "Missing evidence required",
-  READY_FOR_AUDIT_PACKAGE: "Audit package ready",
   NOT_ASSESSABLE: "Not assessable without stronger evidence",
   EUDR_EVIDENCE_READY: "EUDR evidence ready",
   EUDR_EVIDENCE_INCOMPLETE: "EUDR evidence incomplete",
@@ -40,6 +38,20 @@ export const CONTROLLED_STATUS_TEXT: Record<ControlledStatus, string> = {
 
 export type EvidenceInputType = "text" | "document" | "image" | "audio";
 
+export type MonitoringPlanValueClass = "DIRECT" | "DERIVED" | "FORECAST" | "MISSING" | "CONFLICTING";
+export type MonitoringEvidenceState = "SOURCE_GROUNDED" | "FORECAST_ONLY" | "MISSING" | "PARTIALLY_SUPPORTED" | "MATERIALLY_SUPPORTED" | "CONFLICTING";
+export type MonitoringWorkspaceStatus = "MONITORING_NOT_STARTED" | "MONITORING_IN_PROGRESS" | "EVIDENCE_GAPS_FOUND" | "REPORT_READY_FOR_REVIEW" | "NEEDS_HUMAN_REVIEW";
+export type MonitoringEvidenceType = "DEVICE_RECORD" | "UPLOADED_DOCUMENT" | "LABORATORY_RECORD" | "STRUCTURED_OPERATOR_RECORD" | "THIRD_PARTY_RECORD" | "USER_ASSERTION" | "UNAVAILABLE";
+export type EvidenceAdmissionStatus = "PENDING_REVIEW" | "ADMITTED" | "REJECTED" | "NEEDS_CLARIFICATION";
+export interface MonitoringPlanItem { itemId: string; projectActivity: string; parameter: string; unit: string; frequency: string; measurementMethod: string; responsibleRole: string; requiredEvidenceType: string; sourceEvidenceId: string; sourceFileName: string; sourcePageOrLocation: string; extractedAt: string; modelName: string; promptVersion: string; confidence: number | null; valueClass: MonitoringPlanValueClass; evidenceState: MonitoringEvidenceState; validationIssues: string[]; }
+export interface MonitoringContext { projectId: string; projectName: string; pddIdentifier: string; pddVersion: string; methodologyId: string; methodologyVersion: string; reportingPeriod: string; location: string; operator: string; monitoringPlanStatus: MonitoringWorkspaceStatus; }
+export interface MonitoringEvidenceRecord { evidenceId: string; projectId: string; reportingPeriod: string; relatedMonitoringPlanItem: string; relatedActivityEventId?: string; evidenceType: MonitoringEvidenceType; originalFilenameOrSourceLabel: string; mimeType: string; fileSize: number | null; documentOrRecordDate: string; ingestionTimestamp: string; operatorOrSubmittingParty: string; sourceClassification: "DEMO_RECORD_NOT_REAL_PROJECT_EVIDENCE" | "USER_ASSERTION" | "PENDING_SOURCE_RECORD"; admissionStatus: EvidenceAdmissionStatus; integrityMetadata: { algorithm: "SHA-256"; hash: string }; validationIssues: string[]; provenanceMetadata: { sourceFileName: string; sourcePageOrLocation?: string; confidence: number | null; evidenceSnippetIdentifier?: string }; gpsCoordinates?: string; captureTimestamp?: string; laboratoryOrThirdPartyIssuer?: string; reviewerStatus: "UNREVIEWED" | "DEMO_ADMITTED" | "NEEDS_REVIEW"; materialClassification: "MATERIAL" | "ADVISORY"; }
+export interface MonitoringEvent { eventId: string; projectId: string; reportingPeriod: string; activityType: string; eventTimestamp: string; batchOrLotId: string; value: string; unit: string; evidenceReferences: string[]; sourceClassification: "CONTROLLED_DEMO_EVIDENCE" | "USER_ASSERTION" | "PENDING_EVIDENCE"; linkedMonitoringPlanItem: string; operator: string; validationStatus: "VALID" | "CONFLICTING" | "INCOMPLETE"; materialClassification: "MATERIAL" | "ADVISORY"; gapFlags: string[]; }
+export interface MonitoringCoverage { requiredItemCount: number; supportedItemCount: number; partiallySupportedItemCount: number; advisoryOnlyItemCount: number; forecastOnlyItemCount: number; missingItemCount: number; conflictingItemCount: number; overdueItemCount: number; laboratoryGapCount: number; calibrationGapCount: number; unresolvedReviewActionCount: number; advisoryAssertionCount: number; packageGatingReasons: string[]; }
+export interface MonitoringTimelineEntry { timelineId: string; timestamp: string; category: "MONITORING_REQUIREMENT" | "PROJECT_ACTIVITY" | "EVIDENCE" | "ADVISORY_ASSERTION" | "SERVER_VALIDATION" | "REPORT_STATUS"; label: string; linkedMonitoringPlanItem: string; evidenceId?: string; eventId?: string; validationOutcome: string; gapOrConflict: string; }
+export interface MonitoringReport { reportId: string; context: MonitoringContext; monitoringPlan: MonitoringPlanItem[]; events: MonitoringEvent[]; evidenceIndex: MonitoringEvidenceRecord[]; coverage: MonitoringCoverage; missingEvidence: string[]; conflicts: string[]; overdueEvents: string[]; status: MonitoringWorkspaceStatus; outputHash: string; generatedAt: string; packageAvailable: boolean; packageGatingReasons: string[]; disclaimer: string; }
+export interface MonitoringWorkspaceResponse { context: MonitoringContext; monitoringPlan: MonitoringPlanItem[]; evidenceIndex: MonitoringEvidenceRecord[]; events: MonitoringEvent[]; timeline: MonitoringTimelineEntry[]; report: MonitoringReport; demoResetAvailable: boolean; }
+export interface GeminiAvailabilityResult { availability: "AVAILABLE" | "UNAVAILABLE"; message: string; sourceFileName: string; sourcePageOrLocation: string; extractedAt?: string; modelName?: string; promptVersion?: string; confidence?: number; validationIssues: string[]; }
 export type AppScreen =
   | "dashboard"
   | "batch"
@@ -52,7 +64,212 @@ export type AppScreen =
   | "eudr-gaps"
   | "audit"
   | "package"
-  | "sonnenerde-demo";
+  | "sonnenerde-demo"
+  | "methodology-preflight"
+  | "monitoring-workspace";
+
+export type MethodologyStandard = "VERRA" | "GOLD_STANDARD";
+export type MethodologyLifecycleStatus = "ACTIVE" | "DRAFT" | "RETIRED";
+export type VerraMonitoringRoute = "HIGH_TECH_MONITORED" | "LOW_TECH_WITH_MEASURED_DATA" | "LOW_TECH_CONSERVATIVE_ROUTE" | "NOT_ASSESSABLE";
+export type GoldParcTrack = "DISTRIBUTED" | "MECHANIZED_TRANSITION" | "INDUSTRIAL_PRECISION";
+export type MethodologyPreflightStatus = "EVIDENCE_UNVERIFIED" | "EVIDENCE_INCOMPLETE" | "NOT_ASSESSABLE" | "NEEDS_HUMAN_REVIEW" | "METHODOLOGY_DRAFT_NOT_USABLE" | "READY_FOR_INDEPENDENT_VERIFICATION";
+export type EvidenceHumanValidationState = "UNREVIEWED" | "VALIDATED" | "CONFLICTING" | "REJECTED";
+export type MethodologyEvidenceClass = "USER_ASSERTION" | "DOCUMENT_CAPTURED" | "SOURCE_LINKED" | "REVIEW_ADMITTED" | "REJECTED";
+
+export interface MethodologyBindingRequest {
+  standard: MethodologyStandard;
+  selectedTrack?: GoldParcTrack;
+  sourceDocumentReference: string;
+}
+
+export interface MethodologyBinding {
+  standard: MethodologyStandard;
+  methodologyId: string;
+  methodologyVersion: string;
+  status: MethodologyLifecycleStatus;
+  selectedTrack?: GoldParcTrack;
+  effectiveDate: string;
+  sourceDocumentReference: string;
+}
+
+export interface FacilityProfile {
+  facilityId: string;
+  operator: string;
+  facilityIdentity: string;
+  location: string;
+  technologyClassification: string;
+  facilityEvidenceIds: string[];
+  operatingPermitEvidenceIds: string[];
+  healthAndSafetyEvidenceIds: string[];
+  greenfieldEvidenceIds: string[];
+  additionalityBaselineEvidenceIds: string[];
+  monitoringPlanVersion: string;
+  monitoringPlanEvidenceIds: string[];
+  recordRetentionEvidenceIds: string[];
+}
+
+export interface FeedstockLot {
+  lotId: string;
+  supplier: string;
+  sourceLocation: string;
+  biomassClass: string;
+  isWasteBiomass: boolean;
+  priorFateEvidenceIds: string[];
+  sustainabilityAndLandRightsEvidenceIds: string[];
+  wetMass: string;
+  dryMass: string;
+  moistureEvidenceIds: string[];
+  chainOfCustodyEvidenceIds: string[];
+  sourceEvidenceIds: string[];
+}
+
+export interface ProductionBatch {
+  batchId: string;
+  reactorOrFacilityId: string;
+  batchStart: string;
+  batchEnd: string;
+  feedstockLotIds: string[];
+  wetInputMass: string;
+  dryInputMass: string;
+  biocharWetOutputMass: string;
+  biocharDryOutputMass: string;
+  processObservationEvidenceIds: string[];
+  productionTechnologyRoute: string;
+  massBalanceReconciliationEvidenceIds: string[];
+  sourceEvidenceIds: string[];
+}
+
+export interface MeasurementAndCalibrationRecord {
+  recordId: string;
+  deviceIdentity: string;
+  measuredParameter: string;
+  timestamp: string;
+  calibrationCertificateEvidenceIds: string[];
+  calibrationValidFrom: string;
+  calibrationValidTo: string;
+  responsibleParty: string;
+  rawRecordHash: string;
+  sourceEvidenceIds: string[];
+}
+
+export interface LaboratorySample {
+  sampleId: string;
+  custodyChainEvidenceIds: string[];
+  productionBatchIds: string[];
+  samplingProcedureEvidenceIds: string[];
+  laboratoryIdentity: string;
+  laboratoryAccreditationEvidenceIds: string[];
+  rawResultsEvidenceIds: string[];
+  qaStatus: string;
+  resultProvenanceEvidenceIds: string[];
+}
+
+export interface TransferAndInventoryEvent {
+  eventId: string;
+  sourceBatchId: string;
+  quantity: string;
+  custodyHandoffEvidenceIds: string[];
+  transportEvidenceIds: string[];
+  lossEventEvidenceIds: string[];
+  destination: string;
+  sourceEvidenceIds: string[];
+}
+
+export interface EndUseInstance {
+  endUseId: string;
+  usePathway: "SOIL" | "NON_SOIL" | "OTHER";
+  batchIds: string[];
+  quantity: string;
+  applicationOrDeliveryDate: string;
+  geolocation: string;
+  recipientOrAccountableEndUser: string;
+  finalNonCombustionUseEvidenceIds: string[];
+  pathwaySpecificEvidenceIds: string[];
+}
+
+export interface EvidenceAsset {
+  evidenceId: string;
+  evidenceClass: MethodologyEvidenceClass;
+  contentHash?: string;
+  sourceOrigin: string;
+  projectId: string;
+  capturedAt: string;
+  mediaType?: string;
+  fileName?: string;
+  sourcePageOrSection?: string;
+  revisionHistory: string[];
+}
+
+export interface EvidenceAssertion {
+  assertionId: string;
+  evidenceId: string;
+  field: string;
+  value: string;
+  extractionProvenance: string;
+  sourcePageOrSection?: string;
+  assertionConfidence: number;
+  humanValidationState: EvidenceHumanValidationState;
+  revisionHistory: string[];
+}
+
+export interface MethodologyDomainResult {
+  requirementId: string;
+  label: string;
+  status: MethodologyPreflightStatus;
+  evidenceIds: string[];
+  gateCodes: string[];
+}
+
+export interface AssessmentRun {
+  assessmentId: string;
+  methodologyBinding: MethodologyBinding;
+  ruleSetVersion: string;
+  inputEvidenceIds: string[];
+  deterministicGateResults: MethodologyDomainResult[];
+  geminiModel?: string;
+  geminiPromptVersion?: string;
+  outputHash: string;
+  reviewerRecommendations: string[];
+  createdAt: string;
+}
+
+export interface MethodologyPreflightRequest {
+  projectId: string;
+  methodologyBinding: MethodologyBindingRequest;
+  monitoringRoute: VerraMonitoringRoute;
+  facilityProfile: FacilityProfile;
+  feedstockLots: FeedstockLot[];
+  productionBatches: ProductionBatch[];
+  measurementAndCalibrationRecords: MeasurementAndCalibrationRecord[];
+  laboratorySamples: LaboratorySample[];
+  transferAndInventoryEvents: TransferAndInventoryEvent[];
+  endUseInstances: EndUseInstance[];
+}
+
+export interface MethodologyDocumentCaptureInput {
+  projectId: string;
+  sourceOrigin: string;
+  sourcePageOrSection?: string;
+  fileName: string;
+  mediaType: string;
+  contentBase64: string;
+}
+
+export interface MethodologyUserAssertionInput {
+  projectId: string;
+  sourceOrigin: string;
+  text: string;
+}
+
+export interface MethodologyPreflightResponse {
+  assessmentRun: AssessmentRun;
+  status: MethodologyPreflightStatus;
+  monitoringRoute: VerraMonitoringRoute;
+  methodologyNotice?: string;
+  gateCodes: string[];
+  packageAvailable?: boolean;
+  package?: { packageId: string; packageHash: string; sourceEvidenceIds: string[]; status: "READY_FOR_INDEPENDENT_VERIFICATION"; notice?: string };
+}
 
 export interface BatchForm {
   id: string;
